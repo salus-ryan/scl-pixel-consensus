@@ -1,0 +1,9 @@
+# pi agent state — local only
+auth.json
+trust.json
+sessions/
+openrouter-models-cache.json
+openrouter-live-state.json
+models.json.bak
+*.pyc
+node_modules/
