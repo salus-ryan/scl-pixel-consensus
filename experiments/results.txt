@@ -1,0 +1,77 @@
+◇ injected env (1) from .env // tip: ⌘ enable debugging { debug: true }
+═══ Hypothesis Test: consensus vs individual accuracy ═══
+
+Models (12): hy3:free, laguna-xs-2.1:free, north-mini-code:free, nemotron-3.5-content-safety:free, nemotron-3-ultra-550b-a55b:free, nemotron-3-nano-omni-30b-a3b-reasoning:free, laguna-xs.2:free, laguna-m.1:free, gemma-4-26b-a4b-it:free, gemma-4-31b-it:free, nemotron-3-super-120b-a12b:free, free
+
+[1/15] What is the chemical symbol for gold?
+  models: 10 responded, 90% individually correct
+  consensus: top="au" support=80% → CORRECT
+
+[2/15] What year did World War 2 end?
+  models: 11 responded, 91% individually correct
+  consensus: top="1945" support=91% → CORRECT
+
+[3/15] What is the capital of Australia?
+  models: 10 responded, 80% individually correct
+  consensus: top="canberra" support=80% → CORRECT
+
+[4/15] How many chromosomes do humans have?
+  models: 10 responded, 80% individually correct
+  consensus: top="46" support=80% → CORRECT
+
+[5/15] What planet is known as the Red Planet?
+  models: 9 responded, 89% individually correct
+  consensus: top="mars" support=78% → CORRECT
+
+[6/15] Who wrote the play Romeo and Juliet?
+  models: 9 responded, 89% individually correct
+  consensus: top="william shakespeare" support=89% → CORRECT
+
+[7/15] What is the speed of light in km/s (approximately)?
+  models: 9 responded, 78% individually correct
+  consensus: top="299792" support=56% → CORRECT
+
+[8/15] What is the largest ocean on Earth?
+  models: 8 responded, 88% individually correct
+  consensus: top="pacific ocean" support=75% → CORRECT
+
+[9/15] What element has atomic number 1?
+  models: 9 responded, 78% individually correct
+  consensus: top="1" support=78% → CORRECT
+
+[10/15] In what country is the Eiffel Tower located?
+  models: 10 responded, 90% individually correct
+  consensus: top="france" support=90% → CORRECT
+
+[11/15] What is the smallest prime number?
+  models: 8 responded, 88% individually correct
+  consensus: top="2" support=88% → CORRECT
+
+[12/15] What gas do plants absorb from the atmosphere for photosynthesis?
+  models: 9 responded, 89% individually correct
+  consensus: top="carbon dioxide" support=78% → CORRECT
+
+[13/15] Who painted the Mona Lisa?
+  models: 8 responded, 88% individually correct
+  consensus: top="leonardo da vinci" support=75% → CORRECT
+
+[14/15] What is the longest river in the world?
+  models: 11 responded, 91% individually correct
+  consensus: top="nile" support=82% → CORRECT
+
+[15/15] How many continents are there?
+  models: 10 responded, 90% individually correct
+  consensus: top="7" support=80% → CORRECT
+
+
+═══ RESULTS ═══
+
+Questions evaluated:        15
+Mean individual accuracy:   86.4%
+Consensus accuracy:         100.0%
+Lift:                       13.6 pts
+
+
+Mean support when correct:  80%
+Mean support when wrong:    0%
+Overall mean support:       80%
