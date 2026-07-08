@@ -1,0 +1,99 @@
+◇ injected env (1) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+═══ Ablation: SCL consensus vs free-text voting (hard set) ═══
+
+Models (10): hy3:free, laguna-xs-2.1:free, north-mini-code:free, nemotron-3.5-content-safety:free, nemotron-3-ultra-550b-a55b:free, nemotron-3-nano-omni-30b-a3b-reasoning:free, laguna-xs.2:free, laguna-m.1:free, gemma-4-26b-a4b-it:free, gemma-4-31b-it:free
+
+[1/14] What is the capital of Myanmar?
+  individual (plain): 88% of 8 models
+  A (SCL semantic):   CORRECT support=88%
+  B (embed cluster):  CORRECT support=75%
+  C (string vote):    CORRECT support=75%
+
+[2/14] What is the capital city of Canada?
+  individual (plain): 89% of 9 models
+  A (SCL semantic):   CORRECT support=75%
+  B (embed cluster):  CORRECT support=89%
+  C (string vote):    CORRECT support=78%
+
+[3/14] What is the capital of Turkey?
+  individual (plain): 90% of 10 models
+  A (SCL semantic):   CORRECT support=88%
+  B (embed cluster):  CORRECT support=70%
+  C (string vote):    CORRECT support=70%
+
+[4/14] What is the capital of Switzerland?
+  individual (plain): 90% of 10 models
+  A (SCL semantic):   CORRECT support=88%
+  B (embed cluster):  CORRECT support=80%
+  C (string vote):    CORRECT support=80%
+
+[5/14] What is the capital of Brazil?
+  individual (plain): 89% of 9 models
+  A (SCL semantic):   CORRECT support=50%
+  B (embed cluster):  CORRECT support=67%
+  C (string vote):    CORRECT support=67%
+
+[6/14] What is the largest desert in the world?
+  individual (plain): 88% of 8 models
+  A (SCL semantic):   CORRECT support=83%
+  B (embed cluster):  CORRECT support=88%
+  C (string vote):    CORRECT support=50%
+
+[7/14] What is the national animal of Scotland?
+  individual (plain): 86% of 7 models
+  A (SCL semantic):   CORRECT support=86%
+  B (embed cluster):  CORRECT support=57%
+  C (string vote):    CORRECT support=57%
+
+[8/14] Who was the first person to win two Nobel Prizes?
+  individual (plain): 83% of 6 models
+  A (SCL semantic):   CORRECT support=50%
+  B (embed cluster):  CORRECT support=83%
+  C (string vote):    CORRECT support=83%
+
+[9/14] How many hearts does an octopus have?
+  individual (plain): 89% of 9 models
+  A (SCL semantic):   CORRECT support=78%
+  B (embed cluster):  CORRECT support=67%
+  C (string vote):    CORRECT support=67%
+
+[10/14] What is the smallest country in the world by area?
+  individual (plain): 88% of 8 models
+  A (SCL semantic):   CORRECT support=75%
+  B (embed cluster):  CORRECT support=75%
+  C (string vote):    CORRECT support=75%
+
+[11/14] Who invented the World Wide Web?
+  individual (plain): 63% of 8 models
+  A (SCL semantic):   CORRECT support=60%
+  B (embed cluster):  CORRECT support=63%
+  C (string vote):    CORRECT support=38%
+
+[12/14] Which country has the longest coastline in the world?
+  individual (plain): 88% of 8 models
+  A (SCL semantic):   CORRECT support=67%
+  B (embed cluster):  CORRECT support=75%
+  C (string vote):    CORRECT support=75%
+
+[13/14] Which planet in our solar system has the most confirmed moons?
+  individual (plain): 67% of 6 models
+  A (SCL semantic):   CORRECT support=71%
+  B (embed cluster):  CORRECT support=50%
+  C (string vote):    CORRECT support=50%
+
+[14/14] In what year did the Berlin Wall fall?
+  individual (plain): 86% of 7 models
+  A (SCL semantic):   CORRECT support=86%
+  B (embed cluster):  CORRECT support=71%
+  C (string vote):    CORRECT support=71%
+
+
+═══ RESULTS ═══
+
+Questions evaluated:          14/14
+Mean individual accuracy:     84.3%
+Arm A (SCL semantic):         100.0%
+Arm B (embedding cluster):    100.0%
+Arm C (string majority):      100.0%
+
+Arm disagreements:
