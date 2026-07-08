@@ -1,0 +1,44 @@
+{
+  "name": "scl-pixel-consensus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "npx tsx server.ts & npx vite --config vite.config.ts",
+    "server": "npx tsx server.ts",
+    "client": "npx vite --config vite.config.ts",
+    "test": "npx tsx tests/openrouter-scl-merge.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/salus-ryan/scl-pixel-consensus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/salus-ryan/scl-pixel-consensus/issues"
+  },
+  "homepage": "https://github.com/salus-ryan/scl-pixel-consensus#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
+  }
+}

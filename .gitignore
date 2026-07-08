@@ -7,3 +7,4 @@ openrouter-live-state.json
 models.json.bak
 *.pyc
 node_modules/
+.env
