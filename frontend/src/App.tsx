@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { PixelCanvas } from "./PixelCanvas";
-import { parseSCL, canonicalLayout, textToPixelLayer, compositeGrid, modelColor, MODEL_COLORS, type RGB, type CompositePixel } from "./scl";
+import { useState, useRef, useCallback } from "react";
+import { SemanticCanvas, type SemanticGridData } from "./SemanticCanvas";
+import { modelColor } from "./scl";
 
 interface ModelState {
   id: string;
@@ -17,52 +17,65 @@ export default function App() {
   const [prompt, setPrompt] = useState("");
   const [running, setRunning] = useState(false);
   const [models, setModels] = useState<ModelState[]>([]);
-  const [grid, setGrid] = useState<{ rows: number; cols: number; pixels: Map<string, CompositePixel> } | null>(null);
-  const [stats, setStats] = useState({ consensus: 0, strong: 0, unanimous: 0, total: 0, disagreements: 0 });
+  const [semanticGrid, setSemanticGrid] = useState<SemanticGridData | null>(null);
+  const [stats, setStats] = useState({ clusters: 0, consensus: 0, branches: 0, total: 0 });
+  const [pipelineStatus, setPipelineStatus] = useState<"idle" | "running" | "done">("idle");
   const abortRef = useRef<AbortController | null>(null);
   const modelsRef = useRef<ModelState[]>([]);
+  const semanticDebounce = useRef<number | null>(null);
 
-  const recomposite = useCallback((currentModels: ModelState[]) => {
-    const validLayers = currentModels
-      .filter((m) => !m.error && m.buffer.length > 0)
-      .map((m) => {
-        const concepts = parseSCL(m.buffer);
-        if (concepts.length === 0) return null;
-        const layout = canonicalLayout(concepts);
-        const layer = textToPixelLayer(layout);
-        return { layer, colorIdx: m.colorIdx };
-      })
-      .filter(Boolean) as { layer: any; colorIdx: number }[];
+  const runSemantic = useCallback(async (currentModels: ModelState[]) => {
+    const validModels = currentModels.filter((m) => !m.error && m.buffer.length > 0);
+    if (validModels.length < 1) return;
 
-    if (validLayers.length === 0) {
-      setGrid(null);
-      setStats({ consensus: 0, strong: 0, unanimous: 0, total: 0, disagreements: 0 });
-      return;
+    setPipelineStatus("running");
+    try {
+      const resp = await fetch("/api/semantic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          models: currentModels.map((m) => ({
+            modelIdx: m.colorIdx,
+            buffer: m.buffer,
+            error: m.error,
+          })),
+        }),
+      });
+      if (resp.ok) {
+        const grid = await resp.json() as SemanticGridData;
+        setSemanticGrid(grid);
+
+        // Compute stats from semantic grid
+        let consensus = 0, branches = 0;
+        for (const px of grid.pixels) {
+          if (px.modelIndices.length >= 2) consensus++;
+          if (px.isBranch) branches++;
+        }
+        setStats({
+          clusters: grid.clusters.length,
+          consensus,
+          branches,
+          total: grid.pixels.length,
+        });
+      }
+    } catch (e) {
+      console.error("Semantic pipeline error:", e);
     }
-
-    const totalModels = currentModels.filter((m) => !m.error).length;
-    const g = compositeGrid(validLayers, totalModels);
-    setGrid(g);
-
-    let consensus = 0; // 2+ models agree on same char at same pixel
-    let strong = 0;     // majority of models agree
-    let unanimous = 0;  // all models agree
-    let disagreements = 0;
-    for (const px of g.pixels.values()) {
-      if (px.modelIndices.length >= 2) consensus++;
-      if (px.agreementRatio > 0.5) strong++;
-      if (px.agreementRatio >= 1.0) unanimous++;
-      if (px.modelIndices.length > 1 && px.agreementRatio < 1.0) disagreements++;
-    }
-    setStats({ consensus, strong, unanimous, total: g.pixels.size, disagreements });
+    setPipelineStatus("done");
   }, []);
+
+  const debouncedSemantic = useCallback((currentModels: ModelState[]) => {
+    if (semanticDebounce.current) clearTimeout(semanticDebounce.current);
+    semanticDebounce.current = window.setTimeout(() => runSemantic(currentModels), 800);
+  }, [runSemantic]);
 
   const startStream = useCallback(async () => {
     if (!prompt.trim()) return;
     setRunning(true);
-    setGrid(null);
+    setSemanticGrid(null);
     setModels([]);
-    setStats({ consensus: 0, strong: 0, unanimous: 0, total: 0, disagreements: 0 });
+    setStats({ clusters: 0, consensus: 0, branches: 0, total: 0 });
+    setPipelineStatus("idle");
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -112,11 +125,9 @@ export default function App() {
                 m.buffer += msg.token;
                 m.tokens++;
                 tokenBatch++;
-                // Recomposite every 5 tokens to avoid thrashing
-                if (tokenBatch >= 5) {
+                if (tokenBatch >= 20) {
                   tokenBatch = 0;
                   setModels([...modelsRef.current]);
-                  recomposite(modelsRef.current);
                 }
               }
             } else if (msg.type === "model_retry") {
@@ -131,7 +142,7 @@ export default function App() {
                 m.done = true;
                 m.retrying = undefined;
                 setModels([...modelsRef.current]);
-                recomposite(modelsRef.current);
+                debouncedSemantic(modelsRef.current);
               }
             } else if (msg.type === "model_error") {
               const m = modelsRef.current[msg.idx];
@@ -141,9 +152,9 @@ export default function App() {
                 setModels([...modelsRef.current]);
               }
             } else if (msg.type === "done") {
-              // Final recomposite
               setModels([...modelsRef.current]);
-              recomposite(modelsRef.current);
+              // Final semantic pass
+              runSemantic(modelsRef.current);
             }
           } catch { /* skip */ }
         }
@@ -155,7 +166,7 @@ export default function App() {
     }
 
     setRunning(false);
-  }, [prompt, recomposite]);
+  }, [prompt, runSemantic, debouncedSemantic]);
 
   const cancel = () => {
     abortRef.current?.abort();
@@ -165,9 +176,8 @@ export default function App() {
   const doneCount = models.filter((m) => m.done).length;
   const errorCount = models.filter((m) => m.error).length;
   const totalTokens = models.reduce((a, m) => a + m.tokens, 0);
+  const totalModels = models.filter((m) => !m.error).length;
   const consensusPercent = stats.total > 0 ? Math.round((stats.consensus / stats.total) * 100) : 0;
-  const strongPercent = stats.total > 0 ? Math.round((stats.strong / stats.total) * 100) : 0;
-  const unanimousPercent = stats.total > 0 ? Math.round((stats.unanimous / stats.total) * 100) : 0;
 
   return (
     <div className="min-h-screen flex flex-col p-4 gap-4 max-w-[1400px] mx-auto">
@@ -176,7 +186,7 @@ export default function App() {
         <h1 className="text-xl font-bold tracking-tight">
           <span className="text-white">◈</span> SCL Pixel Consensus
         </h1>
-        <span className="text-gray-500 text-sm">visual ensemble via character-level registration</span>
+        <span className="text-gray-500 text-sm">semantic interference via concept-level registration</span>
       </div>
 
       {/* Input */}
@@ -208,30 +218,30 @@ export default function App() {
           <span>{totalTokens} tokens</span>
           {stats.total > 0 && (
             <>
-              <span className="text-green-400 font-medium">{consensusPercent}% overlap</span>
-              <span className="text-gray-500">({stats.consensus} px with 2+ models)</span>
-              <span className="text-blue-300">{strongPercent}% strong</span>
-              {stats.unanimous > 0 && <span className="text-white">{unanimousPercent}% unanimous</span>}
-              {stats.disagreements > 0 && (
-                <span className="text-yellow-400">{stats.disagreements} conflicts</span>
+              <span className="text-purple-400">{stats.clusters} clusters</span>
+              <span className="text-green-400 font-medium">{consensusPercent}% consensus</span>
+              <span className="text-gray-500">({stats.consensus} px overlap)</span>
+              {stats.branches > 0 && (
+                <span className="text-yellow-400">{stats.branches} branches</span>
               )}
             </>
           )}
+          {pipelineStatus === "running" && <span className="text-blue-400 animate-pulse">⟳ semantic...</span>}
           {errorCount > 0 && <span className="text-red-400">{errorCount} errors</span>}
         </div>
       )}
 
       {/* Main content */}
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* Pixel grid */}
+        {/* Semantic pixel grid */}
         <div className="flex-1 bg-gray-900/50 border border-gray-800 rounded-xl p-4 overflow-auto">
-          {grid ? (
-            <PixelCanvas grid={grid} />
+          {semanticGrid && semanticGrid.pixels.length > 0 ? (
+            <SemanticCanvas grid={semanticGrid} totalModels={totalModels} />
           ) : running ? (
             <div className="flex items-center justify-center h-64 text-gray-500">
               <div className="text-center">
                 <div className="text-2xl mb-2 animate-pulse">◈</div>
-                <div>Waiting for SCL blocks to register...</div>
+                <div>Streaming SCL... semantic registration pending</div>
               </div>
             </div>
           ) : (
@@ -273,20 +283,21 @@ export default function App() {
       </div>
 
       {/* Legend */}
-      {grid && (
+      {semanticGrid && semanticGrid.pixels.length > 0 && (
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-white inline-block" /> unanimous
+            <span className="w-3 h-3 rounded bg-white inline-block" /> full consensus
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-gray-400 inline-block" /> strong agreement
+            <span className="w-3 h-3 rounded bg-blue-300 inline-block" /> partial overlap
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: `rgb(231,76,60)` }} /> minority
+            <span className="w-3 h-3 rounded inline-block border-l-2 border-yellow-400 bg-yellow-400/20" /> value branch
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-gray-800 inline-block" /> empty
+            <span className="w-3 h-3 rounded bg-gray-700 inline-block" /> single model
           </span>
+          <span className="text-gray-600 ml-2">≡ exact &nbsp; ≈ alias &nbsp; ~ embedding</span>
         </div>
       )}
     </div>

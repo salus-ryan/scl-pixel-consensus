@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { runSemanticPipeline, serializeGrid } from "./semantic/pipeline.ts";
+import { warmup } from "./semantic/embeddings.ts";
 
 dotenv.config();
 
@@ -194,7 +196,27 @@ app.get("/api/stream", async (req, res) => {
   res.end();
 });
 
+// ── Semantic pipeline endpoint ────────────────────────────────────────────────
+// POST /api/semantic — takes model buffers, returns semantic grid
+app.post("/api/semantic", async (req, res) => {
+  const { models } = req.body as { models: { modelIdx: number; buffer: string; error?: string }[] };
+  if (!models || !Array.isArray(models)) {
+    res.status(400).json({ error: "models array required" });
+    return;
+  }
+
+  try {
+    const grid = await runSemanticPipeline(models);
+    res.json(serializeGrid(grid));
+  } catch (e: any) {
+    console.error("[semantic] Pipeline error:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = 3001;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`SCL Pixel Consensus backend on http://localhost:${PORT}`);
+  // Warmup embedding model in background
+  warmup().catch((e) => console.error("[embeddings] Warmup failed:", e));
 });
